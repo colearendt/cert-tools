@@ -16,6 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const loadingOverlay = document.getElementById('loadingOverlay');
   const loadingStatus = document.getElementById('loadingStatus');
   const generateBtn = document.getElementById('generateBtn');
+  const pkiJsStatus = document.getElementById('pkiJsStatus');
+
+  // PKI.js is bundled, so it's always ready immediately
+  // Update the UI to show ready state
+  if (pkiJsStatus) {
+    pkiJsStatus.innerHTML = '<span class="status-ready">●</span> PKI.js ready';
+    pkiJsStatus.classList.remove('loading');
+    pkiJsStatus.classList.add('ready');
+  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
