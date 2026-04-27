@@ -20,23 +20,20 @@ export function checkPKIJsStatus() {
   };
 
   try {
-    // Check for PKI.js
-    if (typeof window !== 'undefined' && window.pkijs) {
+    // Check for bundled PKI.js via getPKIJs
+    const pkiRefs = getPKIJs();
+    if (pkiRefs) {
       status.pkijs = true;
+      status.asn1js = true;
       
       // Check for required classes
       const requiredClasses = ['Certificate', 'PrivateKeyInfo', 'PFX', 'SafeBag'];
-      const missingClasses = requiredClasses.filter(cls => !window.pkijs[cls]);
+      const missingClasses = requiredClasses.filter(cls => !pkiRefs.pkijs[cls]);
       
       if (missingClasses.length > 0) {
         status.error = `PKI.js missing classes: ${missingClasses.join(', ')}`;
         return status;
       }
-    }
-
-    // Check for ASN1.js
-    if (typeof window !== 'undefined' && window.asn1js) {
-      status.asn1js = true;
     }
 
     // Check for Web Crypto API

@@ -65,6 +65,46 @@ Your private key is sensitive cryptographic material. This tool:
 - **Cryptography**: [PKI.js](https://github.com/PeculiarVentures/PKI.js) for PKCS#12 generation
 - **Standards**: RFC 7292 compliant PKCS#12 implementation
 - **Deployment**: Cloudflare Workers with static asset hosting
+- **CSP Compliance**: Strict Content Security Policy (all dependencies bundled)
+
+### Content Security Policy
+
+This application uses a strict Content Security Policy (CSP) with all dependencies bundled at build time:
+
+```
+CSP: script-src 'self' 'unsafe-inline'
+```
+
+**No external scripts** - PKI.js and all dependencies are bundled by Astro/Vite at build time and served from your own domain. This provides:
+- ✅ Maximum security (no external script sources)
+- ✅ Works offline after initial load
+- ✅ No CDN dependencies or failures
+- ✅ Faster loading (single bundle)
+
+**Bundled Dependencies:**
+- `pkijs` - PKCS#12 generation library
+- `asn1js` - ASN.1 parsing
+- All bundled at build time, no runtime fetching
+
+### Project Structure
+
+```
+src/
+├── layouts/
+│   └── Layout.astro          # Base HTML layout with CSP headers
+├── pages/
+│   └── index.astro           # Main application UI
+├── scripts/
+│   ├── certificates.js       # Cloudflare root CA certificates
+│   ├── pfx-real.js           # Real PKCS#12 generation using PKI.js
+│   ├── pfx-generator.js      # UI controller and form handling
+│   └── pfx-verifier.js       # Testing and verification utilities
+tests/
+├── certificates.test.ts      # Certificate utility tests
+├── pfx-generation.test.ts    # PFX generation tests
+├── e2e-csp.test.ts          # CSP compliance tests
+└── README.md                # Test documentation
+```
 
 ## Verification
 
@@ -92,10 +132,11 @@ The tool automatically runs verification tests when loaded. Check your browser's
 
 ### "PKI.js library not loaded"
 
-1. Check your internet connection (PKI.js is loaded from CDN)
-2. Refresh the page and wait a few seconds
-3. Check browser console for network errors
-4. Disable ad blockers that might block CDN scripts
+This should not happen with bundled dependencies. If you see this error:
+1. Check browser console for JavaScript errors
+2. Ensure you're using a modern browser (Chrome 80+, Firefox 78+, Safari 14+)
+3. Try hard-refreshing the page (Ctrl/Cmd + Shift + R)
+4. If the issue persists, there may be a bug - please report it
 
 ### "Failed to parse certificate"
 
@@ -123,24 +164,6 @@ The certificate and private key must be generated together. If you have a mismat
 3. Try importing via IIS Manager instead of the Certificate MMC
 4. Check that the certificate hasn't expired
 
-## Development
-
-### Project Structure
-
-```
-src/
-├── layouts/
-│   └── Layout.astro          # Base HTML layout with PKI.js CDN
-├── pages/
-│   └── index.astro           # Main application UI
-├── scripts/
-│   ├── certificates.js       # Cloudflare root CA certificates
-│   ├── pfx-real.js           # Real PKCS#12 generation using PKI.js
-│   ├── pfx-generator.js      # UI controller and form handling
-│   └── pfx-verifier.js       # Testing and verification utilities
-└── styles/                   # (if any custom styles)
-```
-
 ### Key Files
 
 - `src/scripts/pfx-real.js` - Core PKCS#12 generation logic using PKI.js
@@ -150,14 +173,37 @@ src/
 
 ### Testing
 
-Run the built-in verification tests:
+#### Automated Tests
+
+Run the test suite:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run with coverage
+npm test -- --coverage
+```
+
+Tests are located in the `tests/` directory and cover:
+- **Vendor Proxy** - CDN library proxying and caching
+- **Certificate Utilities** - RSA/ECC detection, root CA handling
+- **PFX Generation** - PKI.js integration and error handling
+- **E2E CSP** - Security policy compliance
+
+#### Built-in Browser Tests
+
+The application also includes runtime verification. Open browser developer console to see:
 
 ```javascript
-// In browser console
+// Run verification tests manually
 await PFXVerifier.runVerificationTests();
 ```
 
-This will check:
+This checks:
 - PKI.js library loading
 - Web Crypto API availability
 - Test certificate generation capability
@@ -190,8 +236,25 @@ MIT License - See [LICENSE](./LICENSE) for details
 Contributions welcome! Please ensure:
 - Code follows existing style
 - Tests pass (`npm test`)
+- New tests added for new features
 - Documentation is updated
 - Security best practices are maintained
+
+### Development Workflow
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Run dev server
+npm run dev
+
+# Deploy
+npm run deploy
+```
 
 ## Support
 
