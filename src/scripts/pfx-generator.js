@@ -177,4 +177,119 @@ function showError(message) {
   errorSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+// Word list for passphrase generation (common, memorable words)
+const WORD_LIST = [
+  'apple', 'beach', 'bridge', 'castle', 'cloud', 'diamond', 'dragon', 'eagle',
+  'forest', 'garden', 'island', 'jacket', 'jungle', 'kite', 'lake', 'lighthouse',
+  'market', 'meadow', 'mountain', 'night', 'ocean', 'pencil', 'piano', 'planet',
+  'river', 'rocket', 'school', 'silver', 'summer', 'sunset', 'tiger', 'train',
+  'valley', 'voice', 'water', 'whale', 'window', 'winter', 'yellow', 'zebra',
+  'amber', 'anchor', 'arrow', 'autumn', 'azure', 'banana', 'bird', 'blue',
+  'book', 'breeze', 'candle', 'canvas', 'canyon', 'cascade', 'cherry', 'circle',
+  'city', 'coral', 'crystal', 'dawn', 'dolphin', 'dream', 'echo', 'emerald',
+  'feather', 'field', 'flame', 'flower', 'fog', 'galaxy', 'gate', 'gecko',
+  'glacier', 'gold', 'grass', 'harbor', 'harmony', 'hawk', 'honey', 'horizon',
+  'ice', 'iris', 'iron', 'ivory', 'jade', 'jet', 'jewel', 'journey',
+  'juniper', 'kangaroo', 'key', 'king', 'koala', 'lagoon', 'lava', 'leaf',
+  'legend', 'lemon', 'light', 'lion', 'lotus', 'lynx', 'magic', 'maple',
+  'marble', 'melon', 'mint', 'mist', 'moon', 'morning', 'music', 'mystic',
+  'nebula', 'nest', 'noble', 'noodle', 'north', 'nutmeg', 'oasis', 'olive',
+  'onyx', 'opal', 'orange', 'orchid', 'palm', 'panther', 'paper', 'paradise',
+  'pearl', 'pepper', 'phoenix', 'pine', 'plum', 'prism', 'pulse', 'quartz',
+  'quest', 'quiet', 'rain', 'raven', 'reef', 'rhythm', 'ripple', 'rose',
+  'ruby', 'sage', 'sail', 'sand', 'sapphire', 'shadow', 'shell', 'shore',
+  'silence', 'sky', 'snow', 'solar', 'song', 'sound', 'spark', 'spirit',
+  'spring', 'star', 'stone', 'storm', 'stream', 'summer', 'sun', 'swan',
+  'temple', 'thunder', 'tide', 'time', 'topaz', 'trail', 'tree', 'tulip',
+  'twilight', 'unicorn', 'valley', 'velvet', 'violet', 'vision', 'voice', 'wave',
+  'wild', 'willow', 'wind', 'wing', 'wish', 'wolf', 'wonder', 'wood'
+];
+
+/**
+ * Generate a memorable passphrase (4-5 random words)
+ * @returns {string} Generated passphrase
+ */
+function generatePassphrase() {
+  const wordCount = 4 + Math.floor(Math.random() * 2); // 4 or 5 words
+  const words = [];
+  
+  for (let i = 0; i < wordCount; i++) {
+    const randomIndex = Math.floor(Math.random() * WORD_LIST.length);
+    // Capitalize first letter of each word for readability
+    const word = WORD_LIST[randomIndex];
+    words.push(word.charAt(0).toUpperCase() + word.slice(1));
+  }
+  
+  // Join with hyphens for easy typing
+  return words.join('-');
+}
+
+/**
+ * Copy text to clipboard
+ * @param {string} text - Text to copy
+ * @returns {Promise<boolean>} Success status
+ */
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    return false;
+  }
+}
+
+// Setup password generation functionality
+document.addEventListener('DOMContentLoaded', () => {
+  const generatePasswordBtn = document.getElementById('generatePasswordBtn');
+  const copyPasswordBtn = document.getElementById('copyPasswordBtn');
+  const passwordInput = document.getElementById('password');
+  const confirmPasswordInput = document.getElementById('confirmPassword');
+  const generatedPasswordDisplay = document.getElementById('generatedPasswordDisplay');
+  const generatedPasswordText = generatedPasswordDisplay?.querySelector('.generated-password-text');
+  
+  if (generatePasswordBtn) {
+    generatePasswordBtn.addEventListener('click', () => {
+      const passphrase = generatePassphrase();
+      
+      // Set the password in both fields
+      passwordInput.value = passphrase;
+      confirmPasswordInput.value = passphrase;
+      
+      // Show the generated password
+      if (generatedPasswordDisplay && generatedPasswordText) {
+        generatedPasswordText.textContent = passphrase;
+        generatedPasswordDisplay.classList.remove('hidden');
+      }
+      
+      console.log('Generated passphrase:', passphrase);
+    });
+  }
+  
+  if (copyPasswordBtn && generatedPasswordDisplay) {
+    copyPasswordBtn.addEventListener('click', async () => {
+      const passwordText = generatedPasswordDisplay.querySelector('.generated-password-text')?.textContent;
+      if (passwordText) {
+        const success = await copyToClipboard(passwordText);
+        if (success) {
+          // Visual feedback
+          const originalText = copyPasswordBtn.innerHTML;
+          copyPasswordBtn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+            Copied!
+          `;
+          copyPasswordBtn.classList.add('copied');
+          
+          setTimeout(() => {
+            copyPasswordBtn.innerHTML = originalText;
+            copyPasswordBtn.classList.remove('copied');
+          }, 2000);
+        }
+      }
+    });
+  }
+});
+
 console.log('PFX Generator loaded successfully');
