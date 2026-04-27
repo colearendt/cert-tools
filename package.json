@@ -1,0 +1,24 @@
+{
+  "name": "origin-cert-pfx-generator",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "astro": "^4.5.0",
+    "@astrojs/cloudflare": "^9.0.0",
+    "pkijs": "^3.0.15",
+    "asn1js": "^3.0.5",
+    "pvutils": "^1.1.3",
+    "@cloudflare/kumo": "^0.0.1"
+  },
+  "devDependencies": {
+    "wrangler": "^3.22.0",
+    "@cloudflare/workers-types": "^4.20231218.0"
+  }
+}

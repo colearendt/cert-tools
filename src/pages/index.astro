@@ -1,0 +1,690 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Origin Certificate PFX Generator">
+  <main class="container">
+    <header class="header">
+      <div class="logo">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 4L6 14v20l18 10 18-10V14L24 4z" fill="#F48120"/>
+          <path d="M24 4L6 14v20l18 10V4z" fill="#D9650B"/>
+          <path d="M24 14v20l-9-5V19l9-5z" fill="white"/>
+          <path d="M33 19v10l-9 5V14l9 5z" fill="white" opacity="0.8"/>
+        </svg>
+      </div>
+      <h1>Origin Certificate PFX Generator</h1>
+      <p class="subtitle">Convert Cloudflare Origin Certificates to PKCS#12 format for Windows</p>
+    </header>
+
+    <div class="deploy-banner">
+      <span class="deploy-icon">🚀</span>
+      <span>Want to deploy your own version?</span>
+      <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/origin-cert-pfx-generator" 
+         class="btn btn-secondary btn-small" target="_blank" rel="noopener">
+        Deploy to Cloudflare
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="security-banner">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v4a1 1 0 102 0V7z" clip-rule="evenodd"/>
+        </svg>
+        <span><strong>100% Client-side:</strong> Your private key never leaves this browser</span>
+        <span id="pkiJsStatus" class="pki-status loading">Loading PKI.js...</span>
+      </div>
+
+      <form id="pfxForm" class="form">
+        <div class="form-section">
+          <h2>1. Certificate</h2>
+          <div class="input-group">
+            <label for="certificate">
+              Origin Certificate (PEM format)
+              <span class="help-text">Paste from Cloudflare dashboard</span>
+            </label>
+            <textarea 
+              id="certificate" 
+              name="certificate" 
+              rows="6" 
+              placeholder="-----BEGIN CERTIFICATE-----&#10;MIIDXTCCAkWgAwIBAgIJAKoK/heBjcOuMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV&#10;...&#10;-----END CERTIFICATE-----"
+              required
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h2>2. Private Key</h2>
+          <div class="input-group">
+            <label for="privateKey">
+              Private Key (PEM format)
+              <span class="help-text">Only shown once when certificate is created in Cloudflare dashboard</span>
+            </label>
+            <textarea 
+              id="privateKey" 
+              name="privateKey" 
+              rows="6" 
+              placeholder="-----BEGIN PRIVATE KEY-----&#10;MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...&#10;...&#10;-----END PRIVATE KEY-----"
+              required
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h2>3. Options</h2>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="includeRootCA" name="includeRootCA" checked />
+              <span class="checkmark"></span>
+              <span class="checkbox-text">
+                Include Cloudflare Origin Root CA
+                <span class="help-text">Recommended - ensures Windows trusts the certificate immediately without manual root CA installation</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h2>4. PFX Password</h2>
+          <div class="input-group">
+            <label for="password">
+              Password
+              <span class="help-text">Required for PFX files - Windows will ask for this when importing</span>
+            </label>
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              minlength="4" 
+              placeholder="Enter a password (minimum 4 characters)"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input 
+              type="password" 
+              id="confirmPassword" 
+              name="confirmPassword" 
+              placeholder="Confirm your password"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="generateBtn" class="btn btn-primary btn-large">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+            Generate PFX File
+          </button>
+        </div>
+      </form>
+
+      <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Generating PFX...</p>
+        <p id="loadingStatus" class="loading-status">Initializing...</p>
+      </div>
+
+      <div id="result" class="result hidden">
+        <div class="result-header">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          <h3>PFX Generated Successfully!</h3>
+        </div>
+        <p class="result-description">
+          Your certificate has been bundled into a standard PKCS#12 (PFX) file that works with Windows, IIS, and other systems.
+        </p>
+        <a id="downloadBtn" class="btn btn-primary btn-large" download="origin-certificate.pfx">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" transform="rotate(180 10 10)"/>
+          </svg>
+          Download certificate.pfx
+        </a>
+        <div class="result-next-steps">
+          <h4>Next Steps:</h4>
+          <ol>
+            <li><strong>Import into Windows:</strong>
+              <ul>
+                <li>Double-click the .pfx file, or</li>
+                <li>Use IIS Manager: Server Certificates → Import</li>
+              </ul>
+            </li>
+            <li><strong>Bind to your website</strong> in IIS</li>
+            <li><strong>Set Cloudflare SSL/TLS</strong> to "Full (strict)"</li>
+          </ol>
+          <p class="verify-note">
+            <strong>Verify your PFX:</strong> Use OpenSSL to verify: 
+            <code>openssl pkcs12 -in certificate.pfx -info -noout</code>
+          </p>
+        </div>
+      </div>
+
+      <div id="error" class="error hidden">
+        <div class="error-header">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <h3>Generation Failed</h3>
+        </div>
+        <p id="errorMessage" class="error-message"></p>
+        <div id="errorDetails" class="error-details"></div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="https://developers.cloudflare.com/ssl/origin-configuration/origin-ca/" target="_blank" rel="noopener">
+          Origin CA Documentation
+        </a>
+        <span class="divider">•</span>
+        <a href="https://github.com/cloudflare/origin-cert-pfx-generator" target="_blank" rel="noopener">
+          Source Code
+        </a>
+      </div>
+      <p class="footer-text">
+        Secure, client-side PFX generation for Cloudflare Origin Certificates • Built with PKI.js
+      </p>
+    </footer>
+  </main>
+</Layout>
+
+<script>
+  import '../scripts/certificates.js';
+  import '../scripts/pfx-real.js';
+  import '../scripts/pfx-generator.js';
+  import '../scripts/pfx-verifier.js';
+</script>
+
+<style>
+  .header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+  
+  .logo {
+    margin-bottom: 1.5rem;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+  }
+  
+  .subtitle {
+    font-size: 1.125rem;
+    color: var(--color-gray-500);
+  }
+
+  .deploy-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-lg);
+    margin-bottom: 1.5rem;
+    font-size: 0.9375rem;
+  }
+
+  .deploy-icon {
+    font-size: 1.25rem;
+  }
+
+  .btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .btn-secondary {
+    background: white;
+    color: #667eea;
+  }
+
+  .btn-secondary:hover {
+    background: #f3f4f6;
+  }
+  
+  .card {
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+  }
+  
+  @media (max-width: 640px) {
+    .card {
+      padding: 1.5rem;
+    }
+
+    .deploy-banner {
+      flex-direction: column;
+      text-align: center;
+      gap: 0.75rem;
+    }
+  }
+  
+  .security-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 2rem;
+    color: var(--color-gray-700);
+    font-size: 0.875rem;
+    flex-wrap: wrap;
+  }
+  
+  .security-banner svg {
+    color: var(--color-success);
+    flex-shrink: 0;
+  }
+
+  .pki-status {
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .pki-status.loading {
+    color: var(--color-gray-400);
+  }
+
+  .pki-status.ready {
+    color: var(--color-success);
+  }
+  
+  .form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--color-gray-100);
+  }
+  
+  .form-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+  
+  .form-section h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin-bottom: 1rem;
+  }
+  
+  .input-group {
+    margin-bottom: 1.25rem;
+  }
+  
+  .input-group:last-child {
+    margin-bottom: 0;
+  }
+  
+  label {
+    display: block;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    margin-bottom: 0.5rem;
+  }
+  
+  .help-text {
+    display: block;
+    font-weight: 400;
+    color: var(--color-gray-400);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+  
+  textarea,
+  input[type="password"],
+  select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    background: white;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  
+  textarea:focus,
+  input[type="password"]:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--color-orange);
+    box-shadow: 0 0 0 3px rgba(244, 129, 32, 0.1);
+  }
+  
+  textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+  
+  select {
+    font-family: var(--font-sans);
+    cursor: pointer;
+  }
+
+  .checkbox-group {
+    margin-top: 1rem;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+    padding: 1rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    transition: background-color 0.15s;
+  }
+
+  .checkbox-label:hover {
+    background: var(--color-gray-50);
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    display: none;
+  }
+
+  .checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--color-gray-300);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+    transition: all 0.15s;
+  }
+
+  .checkbox-label input[type="checkbox"]:checked + .checkmark {
+    background: var(--color-orange);
+    border-color: var(--color-orange);
+  }
+
+  .checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .checkbox-text {
+    font-weight: 500;
+    color: var(--color-gray-700);
+  }
+
+  .checkbox-text .help-text {
+    display: block;
+    font-weight: 400;
+    margin-top: 0.25rem;
+  }
+  
+  .form-actions {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--color-gray-100);
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s, transform 0.1s;
+    text-decoration: none;
+  }
+  
+  .btn:active {
+    transform: translateY(1px);
+  }
+  
+  .btn-primary {
+    background: var(--color-orange);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: var(--color-orange-dark);
+  }
+  
+  .btn-large {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+  }
+  
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: var(--radius-lg);
+  }
+
+  .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--color-gray-200);
+    border-top-color: var(--color-orange);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: var(--color-gray-700);
+  }
+
+  .loading-status {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+  }
+  
+  .hidden {
+    display: none !important;
+  }
+  
+  .result,
+  .error {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+  }
+  
+  .result {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+  }
+  
+  .result-header,
+  .error-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .result-header svg {
+    color: var(--color-success);
+  }
+  
+  .result-header h3,
+  .error-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+  
+  .result-header h3 {
+    color: #166534;
+  }
+  
+  .result-description {
+    color: #166534;
+    margin-bottom: 1.5rem;
+  }
+  
+  #downloadBtn {
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+  
+  .result-next-steps {
+    background: white;
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    border: 1px solid #bbf7d0;
+  }
+  
+  .result-next-steps h4 {
+    font-weight: 600;
+    color: #166534;
+    margin-bottom: 0.75rem;
+  }
+  
+  .result-next-steps ol {
+    margin-left: 1.25rem;
+    color: #166534;
+  }
+  
+  .result-next-steps li {
+    margin-bottom: 0.5rem;
+  }
+  
+  .result-next-steps ul {
+    margin-left: 1.25rem;
+    margin-top: 0.25rem;
+  }
+
+  .verify-note {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #bbf7d0;
+    font-size: 0.875rem;
+  }
+
+  .verify-note code {
+    background: #f0fdf4;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+  }
+  
+  .error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+  }
+  
+  .error-header svg {
+    color: var(--color-error);
+  }
+  
+  .error-header h3 {
+    color: #991b1b;
+  }
+  
+  .error-message {
+    color: #991b1b;
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+
+  .error-details {
+    color: #7f1d1d;
+    font-size: 0.875rem;
+  }
+
+  .error-details ul {
+    margin-left: 1.25rem;
+    margin-top: 0.5rem;
+  }
+
+  .error-details li {
+    margin-bottom: 0.25rem;
+  }
+  
+  .footer {
+    text-align: center;
+    padding: 2rem 0;
+  }
+  
+  .footer-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+  }
+  
+  .footer-links a {
+    color: var(--color-orange);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .footer-links a:hover {
+    text-decoration: underline;
+  }
+  
+  .divider {
+    color: var(--color-gray-300);
+  }
+  
+  .footer-text {
+    font-size: 0.875rem;
+    color: var(--color-gray-400);
+  }
+
+  .status-ready {
+    color: var(--color-success);
+  }
+
+  .status-error {
+    color: var(--color-error);
+  }
+</style>

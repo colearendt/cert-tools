@@ -1,0 +1,21 @@
+name = "origin-cert-pfx-generator"
+compatibility_date = "2026-04-23"
+compatibility_flags = ["nodejs_compat"]
+
+# For Pages deployment
+[site]
+bucket = "./dist"
+
+# Enable observability for debugging and monitoring
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# KV namespace for storing Cloudflare Root CA certificates
+[[kv_namespaces]]
+binding = "ROOT_CA"
+id = ""
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
