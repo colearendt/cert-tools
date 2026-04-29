@@ -239,7 +239,7 @@ async function copyToClipboard(text) {
   }
 }
 
-// Setup password generation functionality
+// Setup password generation and visibility toggle
 document.addEventListener('DOMContentLoaded', () => {
   const generatePasswordBtn = document.getElementById('generatePasswordBtn');
   const copyPasswordBtn = document.getElementById('copyPasswordBtn');
@@ -247,7 +247,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const confirmPasswordInput = document.getElementById('confirmPassword');
   const generatedPasswordDisplay = document.getElementById('generatedPasswordDisplay');
   const generatedPasswordText = generatedPasswordDisplay?.querySelector('.generated-password-text');
+  const passwordToggles = document.querySelectorAll('.password-toggle');
   
+  // Password visibility toggle (both fields toggle together)
+  let passwordVisible = false;
+  
+  passwordToggles.forEach(toggle => {
+    toggle.addEventListener('click', () => {
+      passwordVisible = !passwordVisible;
+      
+      // Toggle both password fields
+      passwordInput.type = passwordVisible ? 'text' : 'password';
+      confirmPasswordInput.type = passwordVisible ? 'text' : 'password';
+      
+      // Update all toggle buttons
+      passwordToggles.forEach(btn => {
+        const eyeOpen = btn.querySelector('.eye-open');
+        const eyeClosed = btn.querySelector('.eye-closed');
+        
+        if (passwordVisible) {
+          eyeOpen.classList.add('hidden');
+          eyeClosed.classList.remove('hidden');
+          btn.title = 'Hide password';
+        } else {
+          eyeOpen.classList.remove('hidden');
+          eyeClosed.classList.add('hidden');
+          btn.title = 'Show password';
+        }
+      });
+    });
+  });
+  
+  // Generate password button
   if (generatePasswordBtn) {
     generatePasswordBtn.addEventListener('click', () => {
       const passphrase = generatePassphrase();
@@ -256,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
       passwordInput.value = passphrase;
       confirmPasswordInput.value = passphrase;
       
-      // Show the generated password
+      // Show the generated password (in text form)
       if (generatedPasswordDisplay && generatedPasswordText) {
         generatedPasswordText.textContent = passphrase;
         generatedPasswordDisplay.classList.remove('hidden');
@@ -266,6 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
+  // Copy password button
   if (copyPasswordBtn && generatedPasswordDisplay) {
     copyPasswordBtn.addEventListener('click', async () => {
       const passwordText = generatedPasswordDisplay.querySelector('.generated-password-text')?.textContent;

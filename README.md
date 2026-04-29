@@ -15,14 +15,14 @@ A secure, client-side tool to convert Cloudflare Origin Certificates to PKCS#12 
 
 ### Deploy to Cloudflare
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/origin-cert-pfx-generator)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/colearendt/cert-tools)
 
 Or manually:
 
 ```bash
 # Clone the repository
-git clone https://github.com/cloudflare/origin-cert-pfx-generator
-cd origin-cert-pfx-generator
+git clone https://github.com/colearendt/cert-tools
+cd cert-tools
 
 # Install dependencies
 npm install
@@ -258,6 +258,7 @@ npm run deploy
 
 ## Support
 
+- [Source Code](https://github.com/colearendt/cert-tools)
 - [Cloudflare Origin CA Documentation](https://developers.cloudflare.com/ssl/origin-configuration/origin-ca/)
 - [PKI.js Documentation](https://github.com/PeculiarVentures/PKI.js)
 - [OpenSSL PKCS#12 Reference](https://www.openssl.org/docs/manmaster/man1/openssl-pkcs12.html)
