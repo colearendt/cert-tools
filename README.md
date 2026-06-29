@@ -15,7 +15,7 @@ A secure, client-side tool to convert Cloudflare Origin Certificates to PKCS#12 
 
 ### Deploy to Cloudflare
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/colearendt/cert-tools)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/colearendt/cert-tools)
 
 Or manually:
 

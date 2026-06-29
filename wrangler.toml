@@ -1,16 +1,16 @@
-name = "origin-cert-pfx-generator"
+name = "cert-tools"
+main = "src/worker.ts"
 compatibility_date = "2026-04-23"
 compatibility_flags = ["nodejs_compat"]
 
-# For Pages deployment
-[site]
-bucket = "./dist"
+# Workers Assets - serves static files from dist
+[assets]
+binding = "ASSETS"
+directory = "./dist"
 
-# Enable observability for debugging and monitoring
+# Enable observability
 [observability]
 enabled = true
-head_sampling_rate = 1
 
-# Environment variables
 [vars]
 ENVIRONMENT = "production"
